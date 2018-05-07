@@ -36,17 +36,28 @@ mpl.rcParams['figure.figsize'] = (12,10)
 time_bins = [ (15*t,15*(t+3)) for t in range(36)]
 
 # Create uneven height bins because of MRMS and other radar scans.
-height_bins = [(0.0, 1000.), (1000., 2000.), (2000., 3000.), (3000., 4000.), 
-               (4000., 6000.), (6000., 8000.), (8000.,10000.)]
+height_bins = [(0.0, 1000.), (1000., 2000.), (2000., 3000.), (3000., 4000.),
+               (4000., 5000.), (5000., 6000.), (7000.,8000.), (8000.,9000.), (9000.,10000.)]
+
         
+#-------------------------------------------------------------------------------
+#
 #-------------------------------------------------------------------------------
 #
 def obs_seq_read_netcdf(filename, retFileAttr = False):
     if retFileAttr == False:
-        return xr.open_dataset(filename).to_dataframe()
+        try:
+            return xr.open_dataset(filename).to_dataframe()
+        except IOError:
+            print(" \n ----> netCDF obs_seq_final file not found! \n")
+            sys.exit(-1)
     else:
-        xa = xr.open_dataset(filename)
-        return xa.to_dataframe(), xa.attrs
+        try:
+            xa = xr.open_dataset(filename)
+            return xa.to_dataframe(), xa.attrs
+        except IOError:
+            print(" \n ----> netCDF obs_seq_final file not found! \n")
+            sys.exit(-1)
 
 #-------------------------------------------------------------------------------
 #

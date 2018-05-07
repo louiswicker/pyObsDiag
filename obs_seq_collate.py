@@ -322,6 +322,7 @@ def read_obs_seq(fhead, return_DF = False, return_XR = False, time_from_1800=Non
 
 # Calculate some handy stuff - like mean innovation (Yb)
     obs_seq.innov = obs_seq.value - obs_seq.meanHxf
+    obs_seq.rmsi  = np.sqrt((obs_seq.innov[:]**2).mean())
     
     if return_DF == True:
         return pd.DataFrame.from_records(obs_seq)
@@ -388,7 +389,6 @@ def main(argv=None):
         print(" Dart_cc:  First file is %s" % (files[0]))
         print(" Dart_cc:  Last  file is %s" % (files[-1]))
         
-        netcdf_file = files[0][:-4]+".nc"
         if options.fprefix == None:
             netcdf_file = os.path.split(files[0])[1][:-4]+".nc"
         else:

@@ -21,7 +21,7 @@ def run_diag(year, month, day, run_collate=True):
     image_dir = "%s/." % (_www_dir)
 
     if run_collate:
-        cmd = 'python %s -d "/scratch/wof/realtime/%s/%s*" -f "obs_seq.final*" -p obs_seq_final' % (_obs_exe, today, year)
+        cmd = 'python %s -d "/scratch/wof/realtime/%s/%s*" -f "obs_seq.final*" -p obs_seq.final' % (_obs_exe, today, year)
 
         print(" Cmd: %s" % (cmd))
         ret = os.system("%s" % cmd)

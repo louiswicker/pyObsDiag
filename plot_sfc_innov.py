@@ -26,7 +26,7 @@ sec_utime   = utime("seconds since 1970-01-01 00:00:00")
 
 plot_params = {0:['LAND_SFC_TEMPERATURE',     'METAR_TEMPERATURE_2_METER',-3,3],
                1:['LAND_SFC_DEWPOINT',        'METAR_DEWPOINT_2_METER',   -3,3], 
-               2:['LAND_SFC_ALTIMETER',       'METAR_ALTIMETER',          -2,2],
+               2:['LAND_SFC_ALTIMETER',       'METAR_ALTIMETER',          -3,3],
                3:['LAND_SFC_U_WIND_COMPONENT','METAR_U_10_METER_WIND',  -5,5], 
                4:['LAND_SFC_V_WIND_COMPONENT','METAR_V_10_METER_WIND',  -5,5]}
 
@@ -37,22 +37,30 @@ time_bins = [ (15*t,15*(t+3)) for t in range(36)]
 #
 def obs_seq_read_netcdf(filename, retFileAttr = False):
     if retFileAttr == False:
-        return xr.open_dataset(filename).to_dataframe()
+        try:
+            return xr.open_dataset(filename).to_dataframe()
+        except IOError:
+            print(" \n ----> netCDF obs_seq_final file not found! \n")
+            sys.exit(-1)
     else:
-        xa = xr.open_dataset(filename)
-        return xa.to_dataframe(), xa.attrs
+        try:
+            xa = xr.open_dataset(filename)
+            return xa.to_dataframe(), xa.attrs
+        except IOError:
+            print(" \n ----> netCDF obs_seq_final file not found! \n")
+            sys.exit(-1)
 
 #-------------------------------------------------------------------------------
 #
 def obs_seq_get_obtype(df, kind=None, name=None):
     
-    if kind:
+    if len(kind) > 0:
         if len(kind) > 1:
             idx1 = df['kind'] == kind[0]
             idx2 = df['kind'] == kind[1]
             return pd.concat([df[idx1], df[idx2]])
         else:
-            idx = df['kind'] == kind
+            idx = df['kind'] == kind[0]
             return df[idx]
     
     if name:
@@ -176,8 +184,32 @@ def obs_seq_SfcInnov(data_dict, axX=None, cint=None, title=None):
     if title != None:
         axX.set_title(title, zorder=10)
                 
+#-------------------------------------------------------------------------------
+# Main function defined to return correct sys.exit() calls
 
-def main(file, image_dir):
+def main(argv=None):
+    if argv is None:
+           argv = sys.argv
+
+# Command line interface definitions
+
+    parser = OptionParser()
+
+    parser.add_option("-f", "--file",  dest="file",  default=None, type="string", help = "obs_seq.final.nc file to process")
+    parser.add_option("--dir",  dest="dir",  default="./", type="string", help = "full pathname where to put image")
+
+    (options, args) = parser.parse_args()
+
+    if options.file == None:
+        print "\n                NO INPUT obs_seq_final.nc IS SUPPLIED, EXITING.... \n "
+        parser.print_help()
+        print
+        sys.exit(1)
+    else:
+        file       = options.file
+        image_dir  = options.dir
+
+# Start code
 
     plotlabel = "SFC %s" % file[-11:-3]
     dataset, fileAttrs = obs_seq_read_netcdf(file, retFileAttr = True)
@@ -188,14 +220,19 @@ def main(file, image_dir):
     
         field = pd.DataFrame({'A' : []})
     
+        ptitle = "%s and %s" % (plot_params[key][0],plot_params[key][1])
+        print(" Plotting:  %s" % ptitle)
         try:
-            ptitle = "%s and %s" % (plot_params[key][0],plot_params[key][1])
-            print(" Plotting:  %s" % ptitle)
-            field     = obs_seq_get_obtype(dataset, kind=[fileAttrs[plot_params[key][0]],fileAttrs[plot_params[key][1]]])
-            data_dict = obs_seq_1D_bin(field, 'innov', time=time_bins)
+            kinds = [fileAttrs[plot_params[key][0]],fileAttrs[plot_params[key][1]]]
         except:
-            pass
+            try:
+                kinds = [fileAttrs[plot_params[key][0]]]
+            except:
+                kinds = [fileAttrs[plot_params[key][1]]]
+
+        field  = obs_seq_get_obtype(dataset, kind=kinds)
     
+        data_dict = obs_seq_1D_bin(field, 'innov', time=time_bins)
         obs_seq_SfcInnov(data_dict, axX = ax[key], cint=plot_params[key][2:], title=ptitle)
 
         del field, data_dict
@@ -216,22 +253,4 @@ def main(file, image_dir):
 #
 if __name__ == "__main__":
 
-#-------------------------------------------------------------------------------
-# Main function defined to return correct sys.exit() calls
-
-# Command line interface for DART_cc
-
-    parser = OptionParser()
-
-    parser.add_option("-f", "--file",  dest="file",  default=None, type="string", help = "obs_seq.final.nc file to process")
-    parser.add_option("--dir",  dest="dir",  default="./", type="string", help = "full pathname where to put image")
-
-    (options, args) = parser.parse_args()
-
-    if options.file == None:
-        print "\n                NO INPUT obs_seq_final.nc IS SUPPLIED, EXITING.... \n "
-        parser.print_help()
-        print
-        sys.exit(1)
-    else:
-        main(options.file, options.dir)
+    sys.exit(main())

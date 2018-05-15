@@ -17,6 +17,7 @@ mpl.rcParams['figure.figsize'] = (12,10)
 import matplotlib.ticker as ticker
 import matplotlib.dates as mdates
 from pltbook import nice_mxmnintvl, nice_clevels
+import matplotlib.transforms as mtransforms
 
 time_format = "%Y-%m-%d_%H:%M:%S"
 day_utime   = utime("days since 1601-01-01 00:00:00")
@@ -134,7 +135,7 @@ def obs_seq_SfcInnov(data_dict, axX=None, cint=None, title=None):
     # Decouple data_dict
     spread   = data_dict['spread']
     anal_min = data_dict['mins']
-    data     = data_dict['bin1d']
+    data     =  - data_dict['bin1d']
     data_rms = data_dict['rms1d']
     num_obs  = data_dict['num_obs']
     
@@ -151,7 +152,7 @@ def obs_seq_SfcInnov(data_dict, axX=None, cint=None, title=None):
     e     = dtime.datetime.strptime(end, "%Y%m%d%H%M%S")
     axX.plot(datebins, spread, lw=1.0, color='b', label="Prior Spread")
     axX.plot(datebins, data_rms, lw=2.0, color='r', label="RMSI")
-    axX.plot(datebins, data,   lw=2.0, color='k', label="Prior Innov [y - Hx]")
+    axX.plot(datebins, data,   lw=2.0, color='k', label="Prior Innov [Hx - y]")
 
     axX.set_xlim(s, e)
 
@@ -181,6 +182,20 @@ def obs_seq_SfcInnov(data_dict, axX=None, cint=None, title=None):
     
     axX.grid(True)
     axX.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+    axX.hlines(0.0, 0.0, 1.0, color='k')
+
+    if title.find('TEMP') != -1:
+        axX.axhspan(cint[0], 0.5*(cint[0]+cint[1]), alpha=0.2, color='blue')
+        axX.axhspan(0.5*(cint[0]+cint[1]), cint[1], alpha=0.2, color='red')
+
+    elif title.find('DEW') != -1:
+        axX.axhspan(cint[0], 0.5*(cint[0]+cint[1]), alpha=0.2, color='brown')
+        axX.axhspan(0.5*(cint[0]+cint[1]), cint[1], alpha=0.2, color='green')
+
+    else:
+        axX.axhspan(cint[0], 0.5*(cint[0]+cint[1]), alpha=0.1, color='blue')
+        axX.axhspan(0.5*(cint[0]+cint[1]), cint[1], alpha=0.1, color='red')
+
     if title != None:
         axX.set_title(title, zorder=10)
                 
@@ -246,7 +261,7 @@ def main(argv=None):
     fig.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])
     
     plt.savefig("%s/SFC_ObsDiag_%s.png" % (image_dir, file[-11:-3]))
-    plt.show()
+#   plt.show()
     
 #-------------------------------------------------------------------------------
 # Main program for testing...
